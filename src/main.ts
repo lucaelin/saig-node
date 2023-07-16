@@ -89,7 +89,7 @@ async function transcribeAudio(audio: Uint8Array): Promise<string> {
   const temperature = 0.1;
   const language = undefined;
 
-  const file = Readable.from(audio);
+  const file = Readable.from(Buffer.from(audio));
   (file as unknown as { path: string }).path = "audio.wav";
 
   const result = await openai.createTranscription(
