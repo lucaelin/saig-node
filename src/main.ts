@@ -1,18 +1,18 @@
 import { Buffer } from "node:buffer";
 // @deno-types="npm:@types/express@4.17.15"
 import express, { Router } from "npm:express";
-import { Md5 } from "https://deno.land/std@0.95.0/hash/md5.ts";
-import _config from "./config.ts";
-import openai from "./cloud/openai.ts";
-
 import multipart from "npm:connect-multiparty";
-import { generateAudio, transcribeAudio } from "./audio.ts";
+import { transcribeAudio } from "./audio.ts";
+import { GameAction, GameEvent, gameEvents } from "./events.ts";
+import { Md5 } from "https://deno.land/std@0.95.0/hash/md5.ts";
 const multipartMiddleware = multipart();
 
 const app = express();
 const gw = Router();
 
-function parseEvent(eventString: string) {
+const soundcache: Record<string, Uint8Array> = {};
+
+function parseEvent(eventString: string): GameEvent {
   const [kind, ts, gameTs, message] = eventString.split("|");
   const context = (message.trim().match(/\(([^)]|\)\()*\)/) ?? []).at(0);
   const messageClean = message.trim().slice((context ?? "").length).trim();
@@ -20,61 +20,60 @@ function parseEvent(eventString: string) {
     kind,
     timestamp: parseFloat(ts) / 1000000000,
     gameTimestamp: parseFloat(gameTs),
-    context: context ? context : undefined,
-    message: messageClean ? messageClean : undefined,
+    context: context
+      ? {
+        location: (context.match(/Context location: ([^,)]*)/) ?? []).at(1) ||
+          undefined,
+        npcs: (context.match(/see this beings in range:([^ )]*)/))?.at(1)
+          ?.split(",").filter((v) => v) || undefined,
+      }
+      : undefined,
+    message: messageClean,
+    chat: messageClean
+      ? {
+        name: messageClean.split(":")[0],
+        message: messageClean.split(":").slice(1).join(":"),
+        background: context?.includes("background chat") ?? false,
+      }
+      : undefined,
   };
 }
 
-async function generatePrompt(
-  events: ReturnType<typeof parseEvent>[],
-): Promise<string> {
-  await Promise.resolve();
-  return `
-You are Herika, a mage in Skyrim!
-Here is what happend last:
-${
-    events.slice(-10).map((event) =>
-      `
-${event.context}
-${event.message}
-`.trim()
-    ).join("\n")
+function stringifyAction(action: GameAction): string {
+  return [action.actor, action.action, action.input].join("|");
+}
+
+function generateActionResponse(e: CustomEvent<GameAction>) {
+  const action = e as CustomEvent<GameAction>;
+  const responseAudioFileName =
+    new Md5().update(action.detail.input).toString() +
+    ".wav";
+  if (action.detail.audio) {
+    soundcache[responseAudioFileName] = action.detail.audio;
   }
-Herika:
-`;
-}
 
-async function submitPrompt(prompt: string): Promise<string> {
-  // DO openai stuff
-  console.log("running openai prompt\n", prompt);
-  const result = await openai.createChatCompletion({
-    model: "gpt-3.5-turbo",
-    messages: [{ role: "user", content: prompt }],
-  });
-
-  return result.data.choices[0].message!.content!;
-}
-
-const events: ReturnType<typeof parseEvent>[] = [];
-async function logEvent(event: ReturnType<typeof parseEvent>): Promise<void> {
-  events.push(event);
-  await Promise.resolve();
-}
-async function generateResponse() {
-  const prompt = await generatePrompt(events);
-  const response = await submitPrompt(prompt);
+  const toPublish = gameEvents.popPendingActions();
+  const response = toPublish.map(stringifyAction).join("\r\n");
+  console.log("publishing", response);
   return response;
 }
 
-gw.get("/comm.php", async (req, res) => {
+gw.get("/comm.php", (req, res) => {
   const data = atob(req.query.DATA as string);
   const event = parseEvent(data);
   console.log(event);
-  if (event.kind !== "request") {
-    await logEvent(event);
+  gameEvents.logEvent(event);
+
+  if (["book"].includes(event.kind)) {
+    gameEvents.addEventListener("action", (e) => {
+      const response = generateActionResponse(e as CustomEvent<GameAction>);
+      res.send(response + "\r\nX-CUSTOM-CLOSE\r\n");
+    }, { once: true });
+  } else {
+    res.sendStatus(200);
   }
-  res.send(200);
-  // may also send
+
+  // may also send at any time:
   // Player|Simchat|Twitch Chat User randomName23 said "i need you to ask me two quesitons in succession, simply respond!"
 });
 
@@ -86,29 +85,25 @@ gw.post("/stt.php", multipartMiddleware, async (req, res) => {
   res.send(text);
 });
 
-const globalNextAudioResponse: Record<string, Uint8Array> = {};
-
-gw.get("/stream.php", async (req, res) => {
+gw.get("/stream.php", (req, res) => {
   const data = atob(req.query.DATA as string);
   // inputtext|366531088273800|636306688|(Context location: )Rude:Tommyjog
 
   const event = parseEvent(data);
   console.log(event);
-  await logEvent(event);
-  const responseText = await generateResponse();
-  const responseAudio = await generateAudio(responseText); // async
-  const responseAudioFileName = new Md5().update(responseText).toString() +
-    ".wav";
-  globalNextAudioResponse[responseAudioFileName] = responseAudio;
+  gameEvents.logEvent(event);
 
-  const responseEvent =
-    `Herika|AASPGQuestDialogue2Topic1B1Topic|${responseText}`;
-  res.send(responseEvent + `\r\nX-CUSTOM-CLOSE`);
+  gameEvents.addEventListener("action", (e) => {
+    const response = generateActionResponse(e as CustomEvent<GameAction>);
+    res.send(response + "\r\nX-CUSTOM-CLOSE\r\n");
+  }, { once: true });
 });
 
 gw.get("/soundcache/:hash", (req, res) => {
-  const file = globalNextAudioResponse[req.params.hash];
+  const file = soundcache[req.params.hash];
+  console.log("access soundcache", req.params.hash);
   if (!file) return res.sendStatus(404);
+  console.log("soundcache hit");
   res.contentType("audio/x-wav");
   res.send(Buffer.from(file));
 });

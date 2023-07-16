@@ -20,7 +20,7 @@ export async function generateAudio(text: string): Promise<Uint8Array> {
 }
 
 export async function transcribeAudio(audio: Uint8Array): Promise<string> {
-  console.log("transcribing audio", audio);
+  console.log("transcribing audio length", audio.byteLength);
   const prompt = undefined;
   const responseFormat = "verbose_json";
   const temperature = 0.1;
