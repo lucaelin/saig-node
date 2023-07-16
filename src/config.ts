@@ -1,4 +1,4 @@
-const configFileName = new URL("../saig-config.json", import.meta.url).pathname;
+const configFileName = "./saig-config.json";
 const config = await Deno.readFile(configFileName)
   .then((file) => JSON.parse(new TextDecoder().decode(file)))
   .catch(async (err) => {
