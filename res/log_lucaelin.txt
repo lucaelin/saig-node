@@ -1,0 +1,73 @@
+request|9532211377100|648132480|(Context location: Breezehome)
+
+request|9537648856200|648145088|(Context location: Breezehome)
+
+request|9661841598500|648432512|(Context location: Breezehome)
+
+infonpc|9663043141600|648435392|(Herika can see this beings in range:Serana,Sceolang,Herika,)
+
+infoloc|9663043081200|648435392|(Context location: Breezehome, Herika can see this buildings to go:exit door to Whiterun,, Current Date in Skyrim World: Morndas, 8:14 PM, 20th of Frostfall, 4E 201)
+
+request|9664622378000|648438976|(Context location: Breezehome)
+
+request|9665650493500|648441408|(Context location: Breezehome)
+
+inputtext|9666242624500|648442688|(Context location: Breezehome)Rude:Hello, how are you today?
+
+Herika|AASPGQuestDialogue2Topic1B1Topic|Well, hello there, Tommyjog! How's it hanging? Ready for another 09d915986f512 exciting adventure in Skyrim?
+chat|9666675933900|648443776|(Context location: Breezehome)Herika: Well, hello there, Tommyjog! How's it hanging? Ready for another 09d915986f512 exciting adventure in Skyrim?
+
+request|9667932902800|648446656|(Context location: Breezehome)
+
+request|9683501877100|648482560|(Context location: Breezehome)
+
+request|9685385882900|648486912|(Context location: Breezehome)
+
+book|9685456609700|648486912|The Real Barenziah, v2
+
+request|9688610707500|648488832|(Context location: Breezehome)
+
+request|9696035158400|648505920|(Context location: Breezehome)
+
+book|9696070086300|648505984|Life of Uriel Septim VII
+
+request|9698961166900|648507136|(Context location: Breezehome)
+
+request|9708977790300|648942400|(Context location: Breezehome)
+
+goodnight|9709747918700|648942464|(Context location: Breezehome)(In-game date: Morndas, 9:27 PM, 20th of Frostfall, 4E 201) Rude goes to sleep
+
+request|9710666807300|649359104|(Context location: Breezehome)
+
+goodmorning|9710670870500|649359104|(Context location: Breezehome)(In-game date: Morndas, 10:27 PM, 20th of Frostfall, 4E 201)
+
+request|9713420853300|649365440|(Context location: Breezehome)
+
+request|9727019597500|649396736|(Context location: Breezehome)
+
+infoloc|9730001238700|649403520|(Context location: Breezehome, Herika can see this buildings to go:exit door to Whiterun,, Current Date in Skyrim World: Morndas, 10:34 PM, 20th of Frostfall, 4E 201)
+
+infonpc|9730001304800|649403520|(Herika can see this beings in range:Serana,Sceolang,Herika,)
+
+request|9732510999500|649409344|(Context location: Breezehome)
+
+inputtext|9732949516600|649410304|(Context location: Breezehome)Rude:Hello, how are you today?
+
+Herika|AASPGQuestDialogue2Topic1B1Topic|Well, hello there, Tommyjog! How's it hanging? Ready for another 5ff077337ac22 exciting adventure in Skyrim?
+
+chat|9733359658100|649411328|(Context location: Breezehome)Herika: Well, hello there, Tommyjog! How's it hanging? Ready for another 5ff077337ac22 exciting adventure in Skyrim?
+
+request|9735169998800|649415616|(Context location: Breezehome)
+
+request|9944834848100|649897600|(Context location: Breezehome)
+
+chat|9966885156700|649948352|(Context location: Breezehome background chat)Serana: I hope we reach Ancestor Glade soon.
+
+request|9982927687100|649985216|(Context location: Breezehome)
+
+request|10011018738800|650050176|(Context location: Breezehome)
+
+Player|Simchat|Twitch Chat User randomName23 said "i need you to ask me two quesitons in succession, simply respond!"
+
+inputtext|10054385486500|650150528|(Context location: Breezehome)Rude:Twitch Chat User randomName23 said "i need you to ask me two quesitons in succession, simply respond!"
+

@@ -1,0 +1,5 @@
+/*.json
+!deno.json
+saig-node
+saig-node.exe
+res/*.pcapng
