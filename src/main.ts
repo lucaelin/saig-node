@@ -1,13 +1,12 @@
 import { Buffer } from "node:buffer";
-import { Readable } from "node:stream";
 // @deno-types="npm:@types/express@4.17.15"
 import express, { Router } from "npm:express";
 import { Md5 } from "https://deno.land/std@0.95.0/hash/md5.ts";
 import _config from "./config.ts";
-import openai, { TranscriptionVerboseJson } from "./cloud/openai.ts";
-import { tts } from "./cloud/gcp.ts";
+import openai from "./cloud/openai.ts";
 
 import multipart from "npm:connect-multiparty";
+import { generateAudio, transcribeAudio } from "./audio.ts";
 const multipartMiddleware = multipart();
 
 const app = express();
@@ -66,46 +65,6 @@ async function generateResponse() {
   const response = await submitPrompt(prompt);
   return response;
 }
-async function generateAudio(text: string): Promise<Uint8Array> {
-  console.log("generating audio for", text);
-
-  const audioResponse = await tts.textSynthesize({
-    input: { text },
-    voice: {
-      ssmlGender: "FEMALE",
-      name: "en-GB-Neural2-C",
-      languageCode: "en-GB",
-    },
-    audioConfig: { audioEncoding: "LINEAR16", speakingRate: 1.1 },
-  });
-
-  return audioResponse.audioContent as Uint8Array;
-}
-
-async function transcribeAudio(audio: Uint8Array): Promise<string> {
-  console.log("transcribing audio", audio);
-  const prompt = undefined;
-  const responseFormat = "verbose_json";
-  const temperature = 0.1;
-  const language = undefined;
-
-  const file = Readable.from(Buffer.from(audio));
-  (file as unknown as { path: string }).path = "audio.wav";
-
-  const result = await openai.createTranscription(
-    file as unknown as File,
-    "whisper-1",
-    prompt,
-    responseFormat,
-    temperature,
-    language,
-  );
-  const transcription = result.data as TranscriptionVerboseJson;
-
-  return transcription.segments.every((s) => s.no_speech_prob > 0.5)
-    ? ""
-    : transcription.text;
-}
 
 gw.get("/comm.php", async (req, res) => {
   const data = atob(req.query.DATA as string);
@@ -127,7 +86,7 @@ gw.post("/stt.php", multipartMiddleware, async (req, res) => {
   res.send(text);
 });
 
-let globalNextAudioResponse: Record<string, Uint8Array>;
+const globalNextAudioResponse: Record<string, Uint8Array> = {};
 
 gw.get("/stream.php", async (req, res) => {
   const data = atob(req.query.DATA as string);

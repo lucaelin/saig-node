@@ -1,8 +1,9 @@
-const configFileName = "./saig-config.json";
+const configFileName = new URL("../saig-config.json", import.meta.url).pathname;
 const config = await Deno.readFile(configFileName)
   .then((file) => JSON.parse(new TextDecoder().decode(file)))
-  .catch(async (_err) => {
-    console.log("No config file found. Running setup.");
+  .catch(async (err) => {
+    console.error(err);
+    console.log(`No config file found at ${configFileName}. Running setup.`);
     const openai_key = prompt("Please enter your OpenAI key:");
     if (!openai_key) throw new Error("Invalid OpenAi key");
 
