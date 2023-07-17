@@ -28,6 +28,7 @@ class GameEvents extends EventTarget {
 
   logEvent(evt: GameEvent) {
     if (evt.kind !== "request") {
+      console.log("logging", evt.kind);
       this.events.push(evt);
       this.dispatchEvent(new CustomEvent<GameEvent>(evt.kind, { detail: evt }));
     }

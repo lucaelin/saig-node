@@ -23,7 +23,7 @@ const createLogEntry = (event: GameEvent) => {
 
 const generatePrompt = (events: GameEvent[]) =>
   `
-You are Herika, a mage in Skyrim!
+You roleplay as Herika, a mage in Skyrim! 
 Current Location: ${
     events.reduce((p, c) => c?.context?.location ?? p, "Unknown")
   }
@@ -33,13 +33,13 @@ Other NPCs nearby: ${
 Here is what happend last:
 ${
     events
-      .filter((e) => ["chat", "inputtext", "book"].includes(e.kind))
+      .filter((e) => ["chat", "inputtext", "Herika", "book"].includes(e.kind))
       .slice(-10)
       .map(createLogEntry)
       .filter((x) => x)
       .join("\n")
   }
-Herika:
+Herika (You) says:
 `.trim();
 
 async function submitPrompt(prompt: string): Promise<string> {
@@ -49,8 +49,8 @@ async function submitPrompt(prompt: string): Promise<string> {
     model: "gpt-3.5-turbo",
     messages: [{ role: "user", content: prompt }],
     max_tokens: 100,
+    stop: ["\n"],
   });
-
   return result.data.choices[0].message!.content!;
 }
 
@@ -67,4 +67,24 @@ gameEvents.addEventListener("inputtext", async (e) => {
     input: responseText,
     audio: responseAudio,
   });
+});
+
+gameEvents.addEventListener("book", async (e) => {
+  const evt = (e as CustomEvent<GameEvent>).detail;
+  console.log("recv book");
+
+  const prompt = await generatePrompt(gameEvents.getEventLog());
+  console.log("book prompt", prompt);
+  const responseText = await submitPrompt(prompt);
+  console.log("book answer", responseText);
+
+  for (const line of responseText.split("\n").filter((l) => l)) {
+    const responseAudio = await generateAudio(line);
+    gameEvents.publishAction({
+      actor: "Herika",
+      action: "AASPGQuestDialogue2Topic1B1Topic",
+      input: line,
+      audio: responseAudio,
+    });
+  }
 });
