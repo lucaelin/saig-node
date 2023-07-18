@@ -5,6 +5,6 @@
     "test:integration": "deno fmt --check && deno lint && deno test --allow-all test/integration/*.test.ts",
     "compile": "deno task compile:windows && deno task compile:linux",
     "compile:windows": "deno compile --allow-all --target x86_64-pc-windows-msvc src/main.ts --output saig-node.exe",
-    "compile:linux": "deno compile --allow-all --target x86_64-unknown-linux-gnu src/main.ts --output saig-node.exe"
+    "compile:linux": "deno compile --allow-all --target x86_64-unknown-linux-gnu src/main.ts --output saig-node"
   }
 }
