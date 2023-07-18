@@ -4,10 +4,11 @@ export type GameEvent = {
   gameTimestamp: number;
   context?: {
     location?: string;
+    pois?: string[];
     date?: string;
     npcs?: string[];
   };
-  message: string;
+  message?: string;
   chat?: {
     name: string;
     message: string;

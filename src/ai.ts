@@ -27,7 +27,10 @@ You roleplay as Herika, a mage in Skyrim!
 Current Location: ${
     events.reduce((p, c) => c?.context?.location ?? p, "Unknown")
   }
-Other NPCs nearby: ${
+POIs nearby: ${
+    events.reduce((p, c) => c?.context?.pois?.join(", ") ?? p, "None")
+  }
+NPCs nearby: ${
     events.reduce((p, c) => c?.context?.npcs?.join(", ") ?? p, "None")
   }
 Here is what happend last:
@@ -54,9 +57,7 @@ async function submitPrompt(prompt: string): Promise<string> {
   return result.data.choices[0].message!.content!;
 }
 
-gameEvents.addEventListener("inputtext", async (e) => {
-  const evt = (e as CustomEvent<GameEvent>).detail;
-
+gameEvents.addEventListener("inputtext", async (_e) => {
   const prompt = await generatePrompt(gameEvents.getEventLog());
   const responseText = await submitPrompt(prompt);
   const responseAudio = await generateAudio(responseText);
@@ -69,14 +70,9 @@ gameEvents.addEventListener("inputtext", async (e) => {
   });
 });
 
-gameEvents.addEventListener("book", async (e) => {
-  const evt = (e as CustomEvent<GameEvent>).detail;
-  console.log("recv book");
-
+gameEvents.addEventListener("book", async (_e) => {
   const prompt = await generatePrompt(gameEvents.getEventLog());
-  console.log("book prompt", prompt);
   const responseText = await submitPrompt(prompt);
-  console.log("book answer", responseText);
 
   for (const line of responseText.split("\n").filter((l) => l)) {
     const responseAudio = await generateAudio(line);

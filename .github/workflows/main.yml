@@ -20,23 +20,12 @@ jobs:
 
       - name: Build and compile
         run: deno task compile
-      - name: Create Release
-        id: create_release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
+        
+      - name: Pre-Release
+        uses: softprops/action-gh-release@v1
         with:
-          tag_name: ${{ github.ref }}
-          release_name: Release ${{ github.ref }}
-          draft: false
-          prerelease: false
-
-      - name: Upload Executables
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./path/to/executables/*
-          asset_name: Executables.zip
-          asset_content_type: application/zip
+          name: pre-${{ github.run_number }}
+          prerelease: true
+          files: |
+            Release.txt
+            LICENSE
