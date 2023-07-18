@@ -20,6 +20,13 @@ jobs:
 
       - name: Build and compile
         run: deno task compile
+
+      - uses: rickstaa/action-create-tag@v1
+        id: "tag_create"
+        with:
+          tag: pre-${{ github.run_number }}
+          tag_exists_error: false
+          message: "rolling release tag"
         
       - name: Pre-Release
         uses: softprops/action-gh-release@v1
@@ -27,5 +34,5 @@ jobs:
           name: pre-${{ github.run_number }}
           prerelease: true
           files: |
-            Release.txt
-            LICENSE
+            saig-node
+            saig-node.exe
