@@ -1,6 +1,6 @@
 import { ChatCompletionRequestMessage } from "npm:openai";
 import { generateAudio } from "./audio.ts";
-import { openrouter } from "./cloud/openai.ts";
+import { openrouter } from "./cloud/openrouter.ts";
 import { ContextEvent, GameEvent, gameEvents } from "./events.ts";
 
 const createLogEntry = (event: GameEvent) => {

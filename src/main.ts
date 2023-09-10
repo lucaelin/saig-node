@@ -16,10 +16,12 @@ gw.get("/say", async (req, res) => {
   const line = req.query["text"]?.toString() ?? "This is a Demo response";
   const responseAudio = await generateAudio(line);
   gameEvents.publishAction({
-    actor: "Herika",
-    action: "AASPGQuestDialogue2Topic1B1Topic",
-    input: line,
-    audio: responseAudio,
+    kind: "chat",
+    chat: {
+      name: "Herika",
+      message: line,
+      audio: responseAudio,
+    },
   });
   res.sendStatus(200);
 });
