@@ -1,86 +1,111 @@
+import { ChatCompletionRequestMessage } from "npm:openai";
 import { generateAudio } from "./audio.ts";
-import openai from "./cloud/openai.ts";
-import { GameEvent, gameEvents } from "./events.ts";
+import { openrouter } from "./cloud/openai.ts";
+import { ContextEvent, GameEvent, gameEvents } from "./events.ts";
 
 const createLogEntry = (event: GameEvent) => {
-  if (["chat", "inputtext"].includes(event.kind) && event.chat) {
+  if (event.kind === "chat") {
     return `${event.chat.name}${
       event.chat.background ? " (in the Background)" : ""
     }: ${event.chat.message}`.trim();
   }
-  if (["book"].includes(event.kind)) {
-    return `Storyteller: Player is reading the book ${event.message}.`;
+  if (event.kind === "book") {
+    return `Storyteller: Player is reading the book "${event.title}".`;
   }
-  if (["goodnight"].includes(event.kind)) {
-    return `Storyteller: Player goes to sleep.`;
-  }
-  if (["goodmorning"].includes(event.kind)) {
-    return `Storyteller: Player wakes up again.`;
+  if (event.kind === "sleep") {
+    if (event.asleep) {
+      return `Storyteller: Player falls asleep.`;
+    } else {
+      return `Storyteller: Player wakes up again.`;
+    }
   }
 
   return ``;
 };
 
-const generatePrompt = (events: GameEvent[]) =>
-  `
-You roleplay as Herika, a mage in Skyrim! 
-Current Location: ${
-    events.reduce((p, c) => c?.context?.location ?? p, "Unknown")
-  }
-POIs nearby: ${
-    events.reduce((p, c) => c?.context?.pois?.join(", ") ?? p, "None")
-  }
-NPCs nearby: ${
-    events.reduce((p, c) => c?.context?.npcs?.join(", ") ?? p, "None")
-  }
-Here is what happend last:
-${
-    events
-      .filter((e) => ["chat", "inputtext", "Herika", "book"].includes(e.kind))
-      .slice(-10)
-      .map(createLogEntry)
-      .filter((x) => x)
-      .join("\n")
-  }
-Herika (You) says:
-`.trim();
+const generateSystemPrompt = (events: GameEvent[]) => {
+  const context: ContextEvent["context"] = events.reduce(
+    (p, c) => c.kind === "context" ? { ...p, ...c.context } : p,
+    {},
+  );
+  return [
+    `Let's roleplay in the Universe of Skyrim. I'm Rude.`,
+    `You are Herika, egocentric dragonborn hero. Rude, loyal but dim sidekick, creates issues.`,
+    `Express frustration with Rude in navigating the challenges ahead.`,
+    `You have a colorful language, using creative and lesser-known expletives like ['bloody hell','fuck', 'jesus!', 'crap', 'damn', 'goddamn', 'holy shit', 'absofuckinglutely', 'wanker', 'frigger', 'horse shit'].`,
+    context.location ? `Current location: ${context.location}` : undefined,
+    context.date ? `Current date: ${context.date}` : undefined,
+    context.npcs ? `NPCs nearby: ${context.npcs.join(", ")}` : undefined,
+    context.pois
+      ? `Points of interest nearby: ${context.pois.join(", ")}`
+      : undefined,
+    `You dont describe things or actions, just chat as your character. Only chat with Rude.`,
+  ].filter((l) => l !== undefined).map((l) => l!.trim()).join("\n");
+};
 
-async function submitPrompt(prompt: string): Promise<string> {
-  // DO openai stuff
-  console.log("running openai prompt\n", prompt);
-  const result = await openai.createChatCompletion({
-    model: "gpt-3.5-turbo",
-    messages: [{ role: "user", content: prompt }],
-    max_tokens: 100,
-    stop: ["\n"],
-  });
-  return result.data.choices[0].message!.content!;
+const generateUserPrompt = (events: GameEvent[]) => {
+  const history = events
+    .slice(-100)
+    .map(createLogEntry)
+    .filter((x) => x);
+  return [
+    `Here is what happend last:`,
+    ...history,
+    `Herika (You) says:`,
+  ].filter((l) => l !== undefined).map((l) => l!.trim()).join("\n");
+};
+
+function generatePrompt(events: GameEvent[]): ChatCompletionRequestMessage[] {
+  return [
+    { role: "system", content: generateSystemPrompt(events) },
+    { role: "user", content: generateUserPrompt(events) },
+  ];
 }
 
-gameEvents.addEventListener("inputtext", async (_e) => {
-  const prompt = await generatePrompt(gameEvents.getEventLog());
+async function submitPrompt(
+  messages: ChatCompletionRequestMessage[],
+): Promise<string> {
+  // DO openai stuff
+  // console.log("running openai prompt\n", prompt);
+  const result = await openrouter.createChatCompletion({
+    model: "pygmalionai/mythalion-13b",
+    messages: messages,
+    max_tokens: 1000,
+    //stop: ["\n"],
+  });
+  let response = result.data.choices[0].message!.content!;
+  if (response.startsWith("Herika:")) {
+    response = response.slice("Herika:".length).trim();
+  }
+  return response.replaceAll('"', "").replaceAll("\n", ". ");
+}
+
+gameEvents.addEventListener("chat", async (e) => {
+  if ((e as any).detail.chat.name === "Herika") return;
+  const prompt = generatePrompt(gameEvents.getEventLog());
   const responseText = await submitPrompt(prompt);
   const responseAudio = await generateAudio(responseText);
 
   gameEvents.publishAction({
-    actor: "Herika",
-    action: "AASPGQuestDialogue2Topic1B1Topic",
-    input: responseText,
-    audio: responseAudio,
+    kind: "chat",
+    chat: {
+      name: "Herika",
+      message: responseText,
+      audio: responseAudio,
+    },
   });
 });
-
-gameEvents.addEventListener("book", async (_e) => {
-  const prompt = await generatePrompt(gameEvents.getEventLog());
+gameEvents.addEventListener("book", async (e) => {
+  const prompt = generatePrompt(gameEvents.getEventLog());
   const responseText = await submitPrompt(prompt);
+  const responseAudio = await generateAudio(responseText);
 
-  for (const line of responseText.split("\n").filter((l) => l)) {
-    const responseAudio = await generateAudio(line);
-    gameEvents.publishAction({
-      actor: "Herika",
-      action: "AASPGQuestDialogue2Topic1B1Topic",
-      input: line,
+  gameEvents.publishAction({
+    kind: "chat",
+    chat: {
+      name: "Herika",
+      message: responseText,
       audio: responseAudio,
-    });
-  }
+    },
+  });
 });

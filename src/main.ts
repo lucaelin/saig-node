@@ -4,11 +4,13 @@ import "./ai.ts";
 import { gw } from "./saig.ts";
 import { gameEvents } from "./events.ts";
 import { generateAudio } from "./audio.ts";
+import { ui } from "./ui.ts";
 
 const app = express();
 
 app.use("/saig-gwserver", gw);
 app.use("//saig-gwserver", gw);
+app.use("/ui", ui);
 
 gw.get("/say", async (req, res) => {
   const line = req.query["text"]?.toString() ?? "This is a Demo response";

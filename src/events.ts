@@ -1,5 +1,6 @@
-export type GameEvent = {
-  kind: string;
+export type ContextEvent = {
+  kind: "context";
+  gameKind: string;
   timestamp: number;
   gameTimestamp: number;
   context?: {
@@ -8,19 +9,49 @@ export type GameEvent = {
     date?: string;
     npcs?: string[];
   };
-  message?: string;
-  chat?: {
-    name: string;
-    message: string;
-    background: boolean;
-  };
 };
+export type GameEvent =
+  | {
+    kind: "unknown";
+    gameKind: string;
+    timestamp: number;
+    gameTimestamp: number;
+    payload?: string;
+  }
+  | ContextEvent
+  | {
+    kind: "chat";
+    gameKind: string;
+    timestamp: number;
+    gameTimestamp: number;
+    chat: {
+      name: string;
+      message: string;
+      background: boolean;
+    };
+  }
+  | {
+    kind: "book";
+    gameKind: string;
+    timestamp: number;
+    gameTimestamp: number;
+    title: string;
+  }
+  | {
+    kind: "sleep";
+    gameKind: string;
+    timestamp: number;
+    gameTimestamp: number;
+    asleep: boolean;
+  };
 
 export type GameAction = {
-  actor: string;
-  action: string;
-  audio?: Uint8Array;
-  input: string;
+  kind: "chat";
+  chat: {
+    name: string;
+    message: string;
+    audio?: Uint8Array;
+  };
 };
 
 class GameEvents extends EventTarget {
@@ -28,11 +59,11 @@ class GameEvents extends EventTarget {
   protected actions: GameAction[] = [];
 
   logEvent(evt: GameEvent) {
-    if (evt.kind !== "request") {
+    if (evt.kind !== "context") {
       console.log("logging", evt.kind);
-      this.events.push(evt);
-      this.dispatchEvent(new CustomEvent<GameEvent>(evt.kind, { detail: evt }));
     }
+    this.events.push(evt);
+    this.dispatchEvent(new CustomEvent<GameEvent>(evt.kind, { detail: evt }));
   }
   publishAction(evt: GameAction) {
     this.actions.push(evt);

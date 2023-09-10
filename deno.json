@@ -1,6 +1,6 @@
 {
   "tasks": {
-    "start": "deno run --allow-all ./src/main.ts",
+    "start": "deno run --watch --allow-all ./src/main.ts",
     "test": "deno fmt --check && deno lint && deno test --allow-all test/*.test.ts",
     "test:integration": "deno fmt --check && deno lint && deno test --allow-all test/integration/*.test.ts",
     "compile": "deno task compile:windows && deno task compile:linux",

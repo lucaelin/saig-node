@@ -1,13 +1,13 @@
 import { Buffer } from "node:buffer";
 import { Readable } from "node:stream";
 import { tts } from "./cloud/gcp.ts";
-import openai, { TranscriptionVerboseJson } from "./cloud/openai.ts";
+import { openai, TranscriptionVerboseJson } from "./cloud/openai.ts";
 
 export async function generateAudio(text: string): Promise<Uint8Array> {
   console.log("generating audio for", text);
 
   const audioResponse = await tts.textSynthesize({
-    input: { text },
+    input: { ssml: `<speak>${text}<break time="500ms"/></speak>` },
     voice: {
       ssmlGender: "FEMALE",
       name: "en-GB-Neural2-C",

@@ -5,6 +5,7 @@ import multipart from "npm:connect-multiparty";
 import { transcribeAudio } from "./audio.ts";
 import { GameAction, GameEvent, gameEvents } from "./events.ts";
 import { Md5 } from "https://deno.land/std@0.95.0/hash/md5.ts";
+import { encodeToString } from "https://deno.land/std@0.95.0/encoding/hex.ts";
 const multipartMiddleware = multipart();
 
 export const gw = Router();
@@ -14,55 +15,100 @@ export function parseEvent(eventString: string): GameEvent {
   const [kind, ts, gameTs, message] = eventString.split("|");
   const context = (message.trim().match(/\(([^)]|\)\()*\)/) ?? []).at(0);
   const messageClean = message.trim().slice((context ?? "").length).trim();
-  const event: GameEvent = {
-    kind,
+  let event: GameEvent = {
+    kind: "unknown",
+    gameKind: kind,
     timestamp: parseFloat(ts) / 1000000000,
     gameTimestamp: parseFloat(gameTs),
-    context: context
-      ? {
-        location:
-          (context.match(/Context location: ([^,)]*)/) ?? []).at(1)?.trim() ||
-          undefined,
-        date: (context.match(/Current Date in Skyrim World:([^)]*)/))?.at(1)
-          ?.trim() ||
-          undefined,
-        npcs: (context.match(/see this beings in range:([^ )]*)/))?.at(1)
-          ?.split(",").map((v) => v.trim()).filter((v) => v) || undefined,
-        pois: (context.match(/can see this buildings to go:([^)]*),,/))?.at(1)
-          ?.split(",").map((v) => v.trim()).filter((v) => v) || undefined,
-      }
-      : undefined,
+    payload: context,
   };
-  if (["chat", "chatnf", "inputtext"].includes(event.kind)) {
-    event.chat = messageClean
-      ? {
+  if (["infoloc", "infonpc", "request"].includes(kind)) {
+    event = {
+      ...event,
+      kind: "context",
+      context: context
+        ? {
+          location:
+            (context.match(/Context location: ([^,)]*)/) ?? []).at(1)?.trim() ||
+            undefined,
+          date: (context.match(/Current Date in Skyrim World:([^)]*)/))?.at(1)
+            ?.trim() ||
+            undefined,
+          npcs: (context.match(/see this beings in range:([^ )]*)/))?.at(1)
+            ?.split(",").map((v) => v.trim()).filter((v) => v) || undefined,
+          pois: (context.match(/can see this buildings to go:([^)]*),,/))?.at(1)
+            ?.split(",").map((v) => v.trim()).filter((v) => v) || undefined,
+        }
+        : undefined,
+    };
+  }
+  /*if (["chat", "chatnf", "inputtext"].includes(kind)) {
+    event = {
+      ...event,
+      kind: "chat",
+      chat: {
         name: messageClean.split(":")[0],
         message: messageClean.split(":").slice(1).join(":"),
         background: context?.includes("background chat") ?? false,
-      }
-      : undefined;
+      },
+    };
+  }*/
+  if (["book"].includes(kind)) {
+    event = {
+      ...event,
+      kind: "book",
+      title: messageClean,
+    };
+  }
+  if (["_speech"].includes(kind)) {
+    const speechData = JSON.parse(messageClean);
+    event = {
+      ...event,
+      kind: "chat",
+      chat: {
+        name: speechData.speaker,
+        message: speechData.speech,
+        background: false,
+      },
+    };
+  }
+  if (["goodnight", "goodmorning"].includes(kind)) {
+    event = {
+      ...event,
+      kind: "sleep",
+      asleep: kind === "goodnight",
+    };
   }
   return event;
 }
 
-function stringifyAction(action: GameAction): string {
-  return [action.actor, action.action, action.input].join("|");
+function convertAction(action: GameAction): string {
+  if (action.kind === "chat") {
+    return [
+      action.chat.name,
+      "AASPGQuestDialogue2Topic1B1Topic",
+      action.chat.message,
+    ].join("|");
+  }
+  return "";
 }
 
 function generateActionResponse() {
   const toPublish = gameEvents.popPendingActions();
-  toPublish.forEach((a) =>
-    soundcache[new Md5().update(a.input).toString() + ".wav"] = a.audio!
-  );
-  const response = toPublish.map(stringifyAction).join("\r\n");
-  console.log("publishing", response);
+  toPublish.forEach((a) => {
+    if (a.kind === "chat") {
+      soundcache[new Md5().update(a.chat.message).toString() + ".wav"] = a.chat
+        .audio!;
+    }
+  });
+  const response = toPublish.map(convertAction).join("\r\n");
   return response;
 }
 
 gw.get("/comm.php", (req, res) => {
   const data = atob(req.query.DATA as string);
+  console.log("incoming", data);
   const event = parseEvent(data);
-  console.log(event);
   gameEvents.logEvent(event);
 
   const additionalResponse =
@@ -71,6 +117,7 @@ gw.get("/comm.php", (req, res) => {
       : "\r\nHerika|command|Inspect@nothing";
 
   const response = generateActionResponse() + additionalResponse;
+  console.log("outgoing", response);
   res.chunkedEncoding = true;
   res.contentType("text/html; charset=UTF-8");
   res.send(response + "\r\nX-CUSTOM-CLOSE");
@@ -86,12 +133,12 @@ gw.post("/stt.php", multipartMiddleware, async (req, res) => {
   res.send(text);
 });
 
-gw.get("/stream.php", (req, res) => {
+gw.get("/streamv2.php", (req, res) => {
   const data = atob(req.query.DATA as string);
   // inputtext|366531088273800|636306688|(Context location: )Rude:Tommyjog
+  console.log("incoming (stream)", data);
 
   const event = parseEvent(data);
-  console.log(event);
   gameEvents.logEvent(event);
 
   res.chunkedEncoding = true;
@@ -99,7 +146,10 @@ gw.get("/stream.php", (req, res) => {
 
   gameEvents.addEventListener("action", (_e) => {
     const response = generateActionResponse();
-    res.send(response + "\r\nX-CUSTOM-CLOSE\r\n");
+    console.log("outgoing (stream)", response);
+    res.send(
+      response + "\r\nX-CUSTOM-CLOSE\r\n",
+    );
   }, { once: true });
 });
 

@@ -5,6 +5,7 @@
     "https://deno.land/std@0.194.0/testing/_diff.ts": "1a3c044aedf77647d6cac86b798c6417603361b66b54c53331b312caeb447aea",
     "https://deno.land/std@0.194.0/testing/_format.ts": "a69126e8a469009adf4cf2a50af889aca364c349797e63174884a52ff75cf4c7",
     "https://deno.land/std@0.194.0/testing/asserts.ts": "056d571baaefc7f13af3e29ad6a66d4dbe5355d3cb2ae130e7d2a1b1e01085e3",
+    "https://deno.land/std@0.201.0/dotenv/mod.ts": "1da8c6d0e7f7d8a5c2b19400b763bc11739df24acec235dda7ea2cfd3d300057",
     "https://deno.land/std@0.95.0/encoding/hex.ts": "f952e0727bddb3b2fd2e6889d104eacbd62e92091f540ebd6459317a61932d9b",
     "https://deno.land/std@0.95.0/hash/md5.ts": "b2c7dabc37a49645cb1ea74a2bfc9ecedbc51253f90d1f3322e8460336b76cf5",
     "https://deno.land/x/jose@v4.4.0/index.ts": "e77ff3af7f89af2eb83785b032c3850657e62873a26b75201df6d35f5535a2ec",
