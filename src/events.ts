@@ -59,9 +59,6 @@ class GameEvents extends EventTarget {
   protected actions: GameAction[] = [];
 
   logEvent(evt: GameEvent) {
-    if (evt.kind !== "context") {
-      console.log("logging", evt.kind);
-    }
     this.events.push(evt);
     this.dispatchEvent(new CustomEvent<GameEvent>(evt.kind, { detail: evt }));
   }

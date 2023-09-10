@@ -20,25 +20,25 @@ export function parseEvent(eventString: string): GameEvent {
     gameKind: kind,
     timestamp: parseFloat(ts) / 1000000000,
     gameTimestamp: parseFloat(gameTs),
-    payload: context,
+    payload: message,
   };
   if (["infoloc", "infonpc", "request"].includes(kind)) {
     event = {
       ...event,
       kind: "context",
       context: context
-        ? {
+        ? JSON.parse(JSON.stringify({
           location:
             (context.match(/Context location: ([^,)]*)/) ?? []).at(1)?.trim() ||
             undefined,
-          date: (context.match(/Current Date in Skyrim World:([^)]*)/))?.at(1)
+          date: (context.match(/Current Date in Skyrim World: ([^)]*)/))?.at(1)
             ?.trim() ||
             undefined,
-          npcs: (context.match(/see this beings in range:([^ )]*)/))?.at(1)
+          npcs: (context.match(/beings are currently visible:([^)]*)/))?.at(1)
             ?.split(",").map((v) => v.trim()).filter((v) => v) || undefined,
-          pois: (context.match(/can see this buildings to go:([^)]*),,/))?.at(1)
+          pois: (context.match(/can see this buildings to go:(.*),,/))?.at(1)
             ?.split(",").map((v) => v.trim()).filter((v) => v) || undefined,
-        }
+        }))
         : undefined,
     };
   }
@@ -84,6 +84,13 @@ export function parseEvent(eventString: string): GameEvent {
 
 function convertAction(action: GameAction): string {
   if (action.kind === "chat") {
+    if (action.chat.name === "Player") {
+      return [
+        action.chat.name,
+        "Simchat",
+        action.chat.message,
+      ].join("|");
+    }
     return [
       action.chat.name,
       "AASPGQuestDialogue2Topic1B1Topic",
@@ -105,7 +112,7 @@ function generateActionResponse() {
 }
 
 gw.get("/comm.php", (req, res) => {
-  const data = atob(req.query.DATA as string);
+  const data = atob(req.query.DATA as string).replaceAll('\r', '');
   console.log("incoming", data);
   const event = parseEvent(data);
   gameEvents.logEvent(event);
@@ -133,7 +140,7 @@ gw.post("/stt.php", multipartMiddleware, async (req, res) => {
 });
 
 gw.get("/streamv2.php", (req, res) => {
-  const data = atob(req.query.DATA as string);
+  const data = atob(req.query.DATA as string).replaceAll('\r', '');
   // inputtext|366531088273800|636306688|(Context location: )Rude:Tommyjog
   console.log("incoming (stream)", data);
 
