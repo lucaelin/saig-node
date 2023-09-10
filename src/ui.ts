@@ -1,8 +1,9 @@
 // @deno-types="npm:@types/express@4.17.15"
-import express, { Router } from "npm:express";
+import {Router} from "npm:express";
 import nodeFs from "node:fs";
 import nodePath from "node:path";
 import {gameEvents} from "./events.ts";
+
 export const ui = Router();
 
 ui.get("/api/history", (req, res) => {

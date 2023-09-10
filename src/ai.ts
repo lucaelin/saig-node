@@ -95,7 +95,7 @@ gameEvents.addEventListener("chat", async (e) => {
     },
   });
 });
-gameEvents.addEventListener("book", async (e) => {
+gameEvents.addEventListener("book", async (_e) => {
   const prompt = generatePrompt(gameEvents.getEventLog());
   const responseText = await submitPrompt(prompt);
   const responseAudio = await generateAudio(responseText);

@@ -1,11 +1,11 @@
 // @deno-types="npm:@types/express@4.17.15"
-import { Router } from "npm:express";
-import { Buffer } from "node:buffer";
+import {Router} from "npm:express";
+import {Buffer} from "node:buffer";
 import multipart from "npm:connect-multiparty";
-import { transcribeAudio } from "./audio.ts";
-import { GameAction, GameEvent, gameEvents } from "./events.ts";
-import { Md5 } from "https://deno.land/std@0.95.0/hash/md5.ts";
-import { encodeToString } from "https://deno.land/std@0.95.0/encoding/hex.ts";
+import {transcribeAudio} from "./audio.ts";
+import {GameAction, GameEvent, gameEvents} from "./events.ts";
+import {Md5} from "https://deno.land/std@0.95.0/hash/md5.ts";
+
 const multipartMiddleware = multipart();
 
 export const gw = Router();
@@ -101,8 +101,7 @@ function generateActionResponse() {
         .audio!;
     }
   });
-  const response = toPublish.map(convertAction).join("\r\n");
-  return response;
+  return toPublish.map(convertAction).join("\r\n");
 }
 
 gw.get("/comm.php", (req, res) => {
