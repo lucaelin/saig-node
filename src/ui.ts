@@ -33,9 +33,13 @@ ui.get("/api/sayAsPlayer", async (req, res) => {
   const line = req.query["text"]?.toString() ?? "This is a Demo response";
   gameEvents.logEvent({
     kind: "chat",
+    gameKind: "chat",
+    timestamp: 0,
+    gameTimestamp: 0,
     chat: {
       name: "Player",
       message: line,
+      background: false
     },
   });
   res.sendStatus(200);
